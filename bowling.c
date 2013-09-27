@@ -31,10 +31,15 @@ static int calcScore(char *scoresheet)
 
 static int calcScoreHelper( int currtotal, char *scoresheet, int frame, int allpinsflag)
 {
-    int first, second, allpinstmp;
+    int first, second, third;
+    char thirdchar;
     char firstchar = *scoresheet;
     *scoresheet++;
     char secondchar = *scoresheet;
+
+    printf("FRAME %d\n", frame);
+    printf("1st char - %c\n", firstchar);
+    printf("2nd char - %c\n", secondchar);
 
     /* Base case */
     if( (firstchar == 0) || (frame > 10) )
@@ -50,11 +55,23 @@ static int calcScoreHelper( int currtotal, char *scoresheet, int frame, int allp
         if( (first < 10) && (second == 10) ) // Spare
         {
             second = 10 - first;
-            allpinstmp = 1;
+            allpinsflag = 1;
         }
         else if( first == 10 )  // Strike
         {
-            allpinstmp = 2;
+            // Need the second roll and the roll after that to calculate score
+            *scoresheet++;
+            thirdchar = *scoresheet;
+            third = convertToInt(thirdchar);
+
+            *scoresheet--;
+            *scoresheet--;
+            
+            allpinsflag = 2;
+        }
+        else if( second != 10 && allpinsflag > 0 )
+        {
+            allpinsflag = 0;
         }
 
         /* Now check for spare/strike on last turn
@@ -65,18 +82,25 @@ static int calcScoreHelper( int currtotal, char *scoresheet, int frame, int allp
         switch( allpinsflag )
         {
             case 1:  // Spare last turn
-                currtotal += 10 + (first*2) + second;
+                currtotal += (first*2) + second;
+                printf("%d: SPARE 1st char - %d\n", __LINE__, first);
+                printf("%d: SPARE 2nd char - %d\n", __LINE__, second);
+                printf("%d: SPARE currtotal = %d\n", __LINE__, currtotal);
                 break;
             case 2:  // Strike last turn
-                currtotal += 10 + (first*2) + (second*2);
+                currtotal += first + second + third;
+                printf("%d: STRIKE 1st char - %d\n", __LINE__, first);
+                printf("%d: STRIKE 2nd char - %d\n", __LINE__, second);
+                printf("%d: STRIKE 3rd char - %d\n", __LINE__, third);
+                printf("%d: STRIKE currtotal = %d\n", __LINE__, currtotal);
                 break;
             default:  // Normal roll
                 currtotal += first + second;
+                printf("%d: DEFAULT currtotal = %d\n", __LINE__, currtotal);
                 break;
         }
         frame++;
         *scoresheet++;
-        allpinsflag = allpinstmp;  // previous gets replaced by current
 
         return calcScoreHelper(currtotal, scoresheet, frame, allpinsflag);
     }
